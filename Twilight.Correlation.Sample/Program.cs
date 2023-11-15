@@ -44,9 +44,10 @@ async Task<IResult> GetWeatherForecasts(ISender mediator, int numberOfForecasts)
     return Results.Json(response);
 }
 
-public record GetForecasts(int NumberOfForecasts) : Request<GetForecastsResponse>;
-
-public record Request<TResponse> : Message, IRequest<TResponse>;
+public record GetForecasts(int NumberOfForecasts) : IRequest<GetForecastsResponse>
+{
+    public string CorrelationId { get; set; } = "";
+}
 
 public record GetForecastsResponse(IEnumerable<WeatherForecast> Payload) : Response<IEnumerable<WeatherForecast>>(Payload);
 
