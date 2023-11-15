@@ -2,23 +2,19 @@
 
 namespace Twilight.Correlation;
 
-public sealed class CorrelationMiddleware : IMiddleware
+public sealed class CorrelationMiddleware(ICorrelationProvider correlationProvider) : IMiddleware
 {
     private const string CorrelationIdHeaderKey = RequestHeaderKey.CorrelationIdHeader;
-
-    private readonly ICorrelationProvider _correlationProvider;
-
-    public CorrelationMiddleware(ICorrelationProvider correlationProvider) => _correlationProvider = correlationProvider;
 
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
         if (context.Request.Headers.TryGetValue(CorrelationIdHeaderKey, out var correlationId))
         {
-            _correlationProvider.CorrelationId.Value = correlationId.ToString();
+            correlationProvider.CorrelationId.Value = correlationId.ToString();
         }
         else
         {
-            context.Request.Headers.Add(CorrelationIdHeaderKey, _correlationProvider.CorrelationId.Value);
+            context.Request.Headers.Append(CorrelationIdHeaderKey, correlationProvider.CorrelationId.Value);
         }
 
         context.Response.OnStarting(async state =>
@@ -27,11 +23,11 @@ public sealed class CorrelationMiddleware : IMiddleware
 
             if (httpContext.Request.Headers.TryGetValue(CorrelationIdHeaderKey, out var requestCorrelationId))
             {
-                httpContext.Response.Headers.Add(CorrelationIdHeaderKey, requestCorrelationId);
+                httpContext.Response.Headers.Append(CorrelationIdHeaderKey, requestCorrelationId);
             }
             else
             {
-                httpContext.Response.Headers.Add(CorrelationIdHeaderKey, _correlationProvider.CorrelationId.Value);
+                httpContext.Response.Headers.Append(CorrelationIdHeaderKey, correlationProvider.CorrelationId.Value);
             }
 
             await Task.CompletedTask.ConfigureAwait(false);
